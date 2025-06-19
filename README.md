@@ -40,7 +40,7 @@ A Chrome extension to record your **entire screen**, **application window**, or 
 
 1. **Clone or Download** the repository:
    ```bash
-   git clone https://github.com/your-username/Flexible-Screen-Recorder.git
+   git clone https://github.com/Pragament/browser_extension_screen_recorder.git
 ````
 
 2. **Open Chrome** and go to:
