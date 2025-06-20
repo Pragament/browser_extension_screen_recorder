@@ -1,24 +1,84 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Tab Screen Recorder</title>
+  <title>Flexible Screen Recorder</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      padding: 10px;
-      width: 220px;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 16px;
+      width: 300px; /* increased from 250px */
+      background-color: #f9f9f9;
+      box-sizing: border-box;
     }
-    button {
-      width: 100%;
-      padding: 10px;
-      margin-top: 10px;
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .header h2 {
       font-size: 16px;
+      margin: 0;
+    }
+
+    #settings-icon {
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+      opacity: 0.6;
+      transition: opacity 0.2s ease;
+    }
+
+    #settings-icon:hover {
+      opacity: 1;
+    }
+
+    label {
+      font-size: 14px;
+      margin-top: 10px;
+      display: block;
+    }
+
+    select, button {
+      width: 100%;
+      padding: 8px;
+      margin-top: 6px;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+
+    button {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      cursor: pointer;
+      margin-top: 16px;
+    }
+
+    button:hover {
+      background-color: #45a049;
     }
   </style>
 </head>
 <body>
-  <button id="start">Start Recording</button>
-  <button id="stop" disabled>Stop Recording</button>
+  <div class="header">
+    <h2>Screen Recorder</h2>
+    <img src="download.png" id="settings-icon" title="Settings">
+  </div>
+
+  <label for="source">Recording Source</label>
+  <select id="source">
+    <option value="screen">Entire Screen</option>
+    <option value="window">Application Window</option>
+    <option value="tab">Browser Tab</option>
+  </select>
+
+  <button id="start">Open Recorder</button>
 
   <script src="popup.js"></script>
 </body>

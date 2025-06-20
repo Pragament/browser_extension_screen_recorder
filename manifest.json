@@ -1,10 +1,23 @@
 {
   "manifest_version": 3,
-  "name": "Tab Screen Recorder",
-  "version": "1.0",
-  "description": "Record the current browser tab",
-  "permissions": ["tabCapture", "downloads"],
+  "name": "Flexible Screen Recorder",
+  "version": "1.2",
+  "description": "Record screen, window, or tab with FPS control",
+  "permissions": [
+    "tabCapture",
+    "downloads",
+    "storage"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
   "action": {
-    "default_popup": "popup.html"
+    "default_popup": "popup.html",
+    "default_title": "Flexible Screen Recorder",
+    "default_icon": "download.png"
+  },
+  "options_page": "settings.html",
+  "icons": {
+    "128": "download.png"
   }
 }
