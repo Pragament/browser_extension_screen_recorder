@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Settings</title>
+  <title>Admin Settings</title>
   <style>
     body {
       font-family: sans-serif;
@@ -13,13 +13,39 @@
       display: block;
       width: 100%;
       margin-top: 10px;
+      font-size: 14px;
+    }
+
+    select, button {
+      padding: 8px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      margin-top: 20px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #45a049;
     }
   </style>
 </head>
 <body>
   <h2>Admin Settings</h2>
 
-  <label for="fps">Frame Rate (FPS):</label>
+  <label for="source">Default Recording Source:</label>
+  <select id="source">
+    <option value="screen">Entire Screen</option>
+    <option value="window">Application Window</option>
+    <option value="tab">Browser Tab</option>
+  </select>
+
+  <label for="fps">Default Frame Rate (FPS):</label>
   <select id="fps">
     <option value="5">5 FPS (Timelapse)</option>
     <option value="10">10 FPS</option>
@@ -29,7 +55,6 @@
 
   <button id="save">Save Settings</button>
 
-  <!-- Link to external script instead of using inline script -->
   <script src="settings.js"></script>
 </body>
 </html>
