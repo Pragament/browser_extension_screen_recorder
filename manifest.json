@@ -1,22 +1,30 @@
 {
   "manifest_version": 3,
-  "name": "Flexible Screen Recorder",
-  "version": "1.2",
-  "description": "Record screen, window, or tab with FPS control",
+  "name": "Flexible Screen Recorder with Subtitles",
+  "version": "1.4",
   "permissions": [
-    "tabCapture",
     "downloads",
+    "scripting",
+    "activeTab",
+    "tabs",
     "storage"
   ],
-  "host_permissions": [
-    "<all_urls>"
-  ],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "background.js"
+  },
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Flexible Screen Recorder",
-    "default_icon": "download.png"
+    "default_title": "Screen Recorder"
   },
   "options_page": "settings.html",
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
   "icons": {
     "128": "download.png"
   }

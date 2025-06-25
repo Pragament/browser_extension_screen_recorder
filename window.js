@@ -3,115 +3,164 @@ const statusText = document.getElementById("status");
 
 let mediaRecorder;
 let recordedChunks = [];
+let subtitleLog = [];
+let lastStoredTitle = "";
+let startTime = 0;
+let titleInterval;
 
 (async () => {
-  const params = new URLSearchParams(window.location.search);
-  const source = params.get("source");
-  const fps = parseInt(params.get("fps")) || 30;
+  const fps = parseInt(new URLSearchParams(location.search).get("fps")) || 30;
+  const playbackFPS = 30; // For timelapse effect
 
+  // Initialize subtitle tracking
+  chrome.storage.local.get(["latestTitle"], ({ latestTitle }) => {
+    if (latestTitle) {
+      subtitleLog.push({ time: 0, title: latestTitle });
+      lastStoredTitle = latestTitle;
+    }
+  });
+
+  startTime = Date.now();
+  subtitleLog = [];
+
+  // Track title changes every 500ms
+  titleInterval = setInterval(() => {
+    const now = Date.now() - startTime;
+    chrome.storage.local.get(["latestTitle"], ({ latestTitle }) => {
+      if (latestTitle && latestTitle !== lastStoredTitle) {
+        subtitleLog.push({ time: now, title: latestTitle });
+        lastStoredTitle = latestTitle;
+      }
+    });
+  }, 500);
+
+  // Start recording screen
   let stream;
   try {
-    if (source === "tab") {
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      if (!tab) throw new Error("No active tab found.");
+    stream = await navigator.mediaDevices.getDisplayMedia({
+      video: { frameRate: fps },
+      audio: true
+    });
 
-      stream = await new Promise((resolve, reject) => {
-        chrome.tabCapture.capture(
-          {
-            audio: true,
-            video: true,
-            videoConstraints: {
-              mandatory: {
-                minFrameRate: fps,
-                maxFrameRate: fps
-              }
-            }
-          },
-          (s) => s ? resolve(s) : reject(new Error("Tab capture failed"))
-        );
-      });
-    } else {
-      stream = await navigator.mediaDevices.getDisplayMedia({
-        video: { frameRate: fps },
-        audio: true
-      });
-    }
+    stream.getVideoTracks()[0].onended = () => {
+      if (mediaRecorder && mediaRecorder.state !== "inactive") {
+        mediaRecorder.stop();
+        statusText.textContent = "Recording stopped.";
+      }
+    };
   } catch (err) {
     statusText.textContent = "Error: " + err.message;
+    clearInterval(titleInterval);
     return;
   }
 
-  recordedChunks = [];
-
-  mediaRecorder = new MediaRecorder(stream, {
-    mimeType: "video/webm; codecs=vp8",
-    videoBitsPerSecond: 2500000
-  });
+  mediaRecorder = new MediaRecorder(stream, { mimeType: "video/webm" });
 
   mediaRecorder.ondataavailable = (e) => {
-    if (e.data.size > 0) recordedChunks.push(e.data);
+    if (e.data.size > 0) {
+      recordedChunks.push(e.data);
+    }
   };
 
   mediaRecorder.onstop = async () => {
+    clearInterval(titleInterval);
+    const totalDuration = Date.now() - startTime;
+    const baseName = `recording-${Date.now()}`;
+
+    // Create original video blob
     const originalBlob = new Blob(recordedChunks, { type: "video/webm" });
-    const originalURL = URL.createObjectURL(originalBlob);
+    const originalUrl = URL.createObjectURL(originalBlob);
 
+    // Playback at faster rate using <video> and captureStream
     const video = document.createElement("video");
-    video.src = originalURL;
+    video.src = originalUrl;
     video.muted = true;
-    video.playbackRate = 30 / fps;
+    video.playbackRate = playbackFPS / fps;
 
-    let newChunks = [];
     const canvasStream = video.captureStream();
-    const newRecorder = new MediaRecorder(canvasStream, {
+    const timelapseChunks = [];
+
+    const timelapseRecorder = new MediaRecorder(canvasStream, {
       mimeType: "video/webm"
     });
 
-    newRecorder.ondataavailable = (e) => {
-      if (e.data.size > 0) newChunks.push(e.data);
+    timelapseRecorder.ondataavailable = (e) => {
+      if (e.data.size > 0) timelapseChunks.push(e.data);
     };
 
-    newRecorder.onstop = () => {
-      const timelapseBlob = new Blob(newChunks, { type: "video/webm" });
-      const url = URL.createObjectURL(timelapseBlob);
-      const filename = `timelapse-${source}-${fps}fps-${Date.now()}.webm`;
+    timelapseRecorder.onstop = () => {
+      // Timelapse download
+      const timelapseBlob = new Blob(timelapseChunks, { type: "video/webm" });
+      const timelapseUrl = URL.createObjectURL(timelapseBlob);
 
-      chrome.downloads.download({
-        url: url,
-        filename: filename,
-        saveAs: true
-      }, (downloadId) => {
-        if (chrome.runtime.lastError) {
-          statusText.textContent = "Download failed: " + chrome.runtime.lastError.message;
-        } else {
-          statusText.textContent = "Timelapse saved successfully.";
-        }
-      });
+      const videoDownload = document.createElement("a");
+      videoDownload.href = timelapseUrl;
+      videoDownload.download = `${baseName}-timelapse.webm`;
+      videoDownload.click(); // ✅ This triggers save dialog
+
+      // SRT download
+      const srtContent = generateSRT(subtitleLog, totalDuration);
+      const srtBlob = new Blob([srtContent], { type: "text/plain" });
+      const srtUrl = URL.createObjectURL(srtBlob);
+
+      const srtDownload = document.createElement("a");
+      srtDownload.href = srtUrl;
+      srtDownload.download = `${baseName}.srt`;
+      srtDownload.click(); // ✅ This triggers save dialog
+
+      statusText.textContent = "Timelapse & subtitles saved.";
+
+      // Cleanup
+      setTimeout(() => {
+        URL.revokeObjectURL(timelapseUrl);
+        URL.revokeObjectURL(srtUrl);
+        URL.revokeObjectURL(originalUrl);
+      }, 1500);
     };
 
+    // Wait for metadata then play and record
     video.onloadedmetadata = async () => {
       try {
         await video.play();
-        newRecorder.start();
-
-        video.onended = () => {
-          newRecorder.stop();
-        };
+        timelapseRecorder.start();
+        video.onended = () => timelapseRecorder.stop();
       } catch (err) {
         console.error("Playback error:", err);
-        statusText.textContent = "Playback failed.";
+        statusText.textContent = "Timelapse generation failed.";
       }
     };
   };
 
   mediaRecorder.start();
   stopBtn.disabled = false;
-  statusText.textContent = "Recording in progress...";
+  statusText.textContent = "Recording...";
 
   stopBtn.onclick = () => {
     if (mediaRecorder && mediaRecorder.state !== "inactive") {
       mediaRecorder.stop();
+      stopBtn.disabled = true;
     }
-    stopBtn.disabled = true;
   };
 })();
+
+function generateSRT(log, totalDuration) {
+  const formatTime = (ms) => {
+    const totalSeconds = Math.floor(ms / 1000);
+    const hours = String(Math.floor(totalSeconds / 3600)).padStart(2, '0');
+    const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0');
+    const seconds = String(totalSeconds % 60).padStart(2, '0');
+    const milliseconds = String(ms % 1000).padStart(3, '0');
+    return `${hours}:${minutes}:${seconds},${milliseconds}`;
+  };
+
+  if (log.length === 0) return "";
+
+  let srt = "";
+  for (let i = 0; i < log.length; i++) {
+    const start = log[i].time;
+    const end = (i < log.length - 1) ? log[i + 1].time : totalDuration;
+    srt += `${i + 1}\n${formatTime(start)} --> ${formatTime(end)}\n${log[i].title}\n\n`;
+  }
+
+  return srt.trim();
+}
