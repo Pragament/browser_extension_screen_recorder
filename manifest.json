@@ -1,10 +1,31 @@
 {
   "manifest_version": 3,
-  "name": "Tab Screen Recorder",
-  "version": "1.0",
-  "description": "Record the current browser tab",
-  "permissions": ["tabCapture", "downloads"],
+  "name": "Flexible Screen Recorder with Subtitles",
+  "version": "1.4",
+  "permissions": [
+    "downloads",
+    "scripting",
+    "activeTab",
+    "tabs",
+    "storage"
+  ],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "background.js"
+  },
   "action": {
-    "default_popup": "popup.html"
+    "default_popup": "popup.html",
+    "default_title": "Screen Recorder"
+  },
+  "options_page": "settings.html",
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "icons": {
+    "128": "download.png"
   }
 }

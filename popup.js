@@ -1,47 +1,27 @@
-let mediaRecorder;
-let recordedChunks = [];
+let recorderWindow = null;
 
-document.getElementById('start').addEventListener('click', async () => {
-  chrome.tabCapture.capture({ audio: true, video: true }, (stream) => {
-    if (!stream) {
-      alert("Failed to capture tab. Please allow permission.");
-      return;
-    }
-
-    mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
-
-    recordedChunks = [];
-
-    mediaRecorder.ondataavailable = function (event) {
-      if (event.data.size > 0) {
-        recordedChunks.push(event.data);
-      }
-    };
-
-    mediaRecorder.onstop = function () {
-      const blob = new Blob(recordedChunks, { type: 'video/webm' });
-      const url = URL.createObjectURL(blob);
-      const filename = `recording-${Date.now()}.webm`;
-
-      chrome.downloads.download({
-        url: url,
-        filename: filename,
-        saveAs: true
-      });
-    };
-
-    mediaRecorder.start();
-
-    document.getElementById('start').disabled = true;
-    document.getElementById('stop').disabled = false;
+document.getElementById("start").addEventListener("click", async () => {
+  const { fps = 30 } = await chrome.storage.sync.get(["fps"]);
+  recorderWindow = await chrome.windows.create({
+    url: `window.html?fps=${fps}`,
+    type: "popup",
+    width: 500,
+    height: 400
   });
 });
 
-document.getElementById('stop').addEventListener('click', () => {
-  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-    mediaRecorder.stop();
-  }
+document.getElementById("stopShare").addEventListener("click", () => {
+  chrome.runtime.sendMessage({ action: "stopRecording" }, (res) => {
+    alert(res?.success ? "Recording stopped." : "No active recording.");
+  });
+});
 
-  document.getElementById('start').disabled = false;
-  document.getElementById('stop').disabled = true;
+document.getElementById("settings-icon").addEventListener("click", () => {
+  chrome.runtime.openOptionsPage();
+});
+
+chrome.windows.onRemoved.addListener((windowId) => {
+  if (recorderWindow && recorderWindow.id === windowId) {
+    recorderWindow = null;
+  }
 });
