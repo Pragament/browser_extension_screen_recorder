@@ -1,19 +1,15 @@
 document.addEventListener("DOMContentLoaded", () => {
   const fpsSelect = document.getElementById("fps");
-  const sourceSelect = document.getElementById("source");
 
   // Load stored settings
-  chrome.storage.sync.get(["fps", "source"], (result) => {
+  chrome.storage.sync.get(["fps"], (result) => {
     fpsSelect.value = result.fps || "30";
-    sourceSelect.value = result.source || "screen";
   });
 
-  // Save both settings
+  // Save settings
   document.getElementById("save").addEventListener("click", () => {
     const fps = fpsSelect.value;
-    const source = sourceSelect.value;
-
-    chrome.storage.sync.set({ fps, source }, () => {
+    chrome.storage.sync.set({ fps }, () => {
       alert("Settings saved!");
     });
   });
