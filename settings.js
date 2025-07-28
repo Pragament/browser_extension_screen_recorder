@@ -2,7 +2,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const fpsSelect = document.getElementById("fps");
   const sourceSelect = document.getElementById("source");
 
-  // Load stored settings
   chrome.storage.sync.get(["fps", "source"], (result) => {
     fpsSelect.value = result.fps || "30";
     sourceSelect.value = result.source || "screen";
