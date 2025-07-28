@@ -81,3 +81,4 @@ chrome.windows.onRemoved.addListener((windowId) => {
         recorderState.examTabId = null;
     }
 });
+//did minor changes
