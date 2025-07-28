@@ -4,7 +4,7 @@ setInterval(() => {
   const currentTitle = document.title;
   if (currentTitle !== lastTitle) {
     lastTitle = currentTitle;
-    chrome.runtime.sendMessage({
+    chrome.runtime.sendMessage({//ghh
       type: "titleUpdate",
       title: currentTitle
     });
