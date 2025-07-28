@@ -3,9 +3,22 @@
 const stopBtn = document.getElementById("stop");
 const statusText = document.getElementById("status");
 
+let mediaRecorder;
 let streamActive = false;
 
-// Main recording function
+function stopRecording() {
+    if (streamActive && mediaRecorder && mediaRecorder.state === "recording") {
+        mediaRecorder.stop();
+        streamActive = false;
+    }
+}
+
+chrome.runtime.onMessage.addListener((msg) => {
+    if (msg.action === 'initiateStop') {
+        stopRecording();
+    }
+});
+
 (async () => {
     let stream;
     try {
@@ -14,88 +27,71 @@ let streamActive = false;
             audio: true
         });
         streamActive = true;
-
-        // --- Tell the background script that sharing is active ---
         chrome.runtime.sendMessage({ action: "recordingActuallyStarted" });
-
-        // Handle user clicking the browser's "Stop sharing" button
-        stream.getVideoTracks()[0].onended = () => {
-             if (streamActive) {
-                streamActive = false;
-                window.close(); // This triggers onRemoved in background.js
-             }
-        };
+        stream.getVideoTracks()[0].onended = () => stopRecording();
     } catch (err) {
-        // User cancelled the prompt or an error occurred
         statusText.textContent = "Sharing cancelled or error occurred.";
-        setTimeout(() => window.close(), 2000); // Close window, onRemoved will trigger callback
+        setTimeout(() => window.close(), 2000);
         return;
     }
 
-    // --- The original recording logic you provided ---
     const recordedChunks = [];
     const subtitleLog = [];
     let lastStoredTitle = "";
     let startTime = Date.now();
     
-    // Initialize subtitle tracking
+    // --- THIS IS THE REVERTED, CORRECT LOGIC ---
+    // Get the initial title when recording starts
     const { latestTitle } = await chrome.storage.local.get(["latestTitle"]);
     if (latestTitle) {
         subtitleLog.push({ time: 0, title: latestTitle });
         lastStoredTitle = latestTitle;
+    } else {
+        // Add a default entry if no title is found initially
+        subtitleLog.push({ time: 0, title: "Recording Started" });
+        lastStoredTitle = "Recording Started";
     }
 
-    // Track title changes
+    // Poll storage every 500ms for new titles. This is reliable.
     const titleInterval = setInterval(async () => {
-        const now = Date.now() - startTime;
         const { latestTitle } = await chrome.storage.local.get(["latestTitle"]);
         if (latestTitle && latestTitle !== lastStoredTitle) {
+            const now = Date.now() - startTime;
             subtitleLog.push({ time: now, title: latestTitle });
             lastStoredTitle = latestTitle;
         }
     }, 500);
 
-    const mediaRecorder = new MediaRecorder(stream, { mimeType: "video/webm" });
-
+    mediaRecorder = new MediaRecorder(stream, { mimeType: "video/webm" });
     mediaRecorder.ondataavailable = (e) => {
         if (e.data.size > 0) recordedChunks.push(e.data);
     };
 
     mediaRecorder.onstop = () => {
-        streamActive = false;
         clearInterval(titleInterval);
         statusText.textContent = "Processing video...";
-        
-        // Save timelapse and SRT file
         handleTimelapseAndSrt(recordedChunks, subtitleLog, startTime);
     };
 
     mediaRecorder.start();
     stopBtn.disabled = false;
     statusText.textContent = "Recording...";
-
-    // Stop button now just closes the window. The background script handles the rest.
-    stopBtn.onclick = () => {
-        window.close();
-    };
-
+    stopBtn.onclick = () => stopRecording();
 })();
 
 
 function handleTimelapseAndSrt(chunks, log, recordingStartTime) {
     const totalDuration = Date.now() - recordingStartTime;
     const baseName = `recording-${Date.now()}`;
-
     const originalBlob = new Blob(chunks, { type: "video/webm" });
     const video = document.createElement("video");
     video.src = URL.createObjectURL(originalBlob);
     video.muted = true;
-    video.playbackRate = 30 / 30; // Normal speed for now, adjust as needed
+    video.playbackRate = 1;
 
     const canvasStream = video.captureStream();
-    const timelapseChunks = [];
     const timelapseRecorder = new MediaRecorder(canvasStream, { mimeType: "video/webm" });
-
+    const timelapseChunks = [];
     timelapseRecorder.ondataavailable = (e) => {
         if (e.data.size > 0) timelapseChunks.push(e.data);
     };
@@ -115,6 +111,9 @@ function handleTimelapseAndSrt(chunks, log, recordingStartTime) {
             filename: `${baseName}.srt`,
             saveAs: true
         });
+
+        statusText.textContent = "Downloads started. This window will close.";
+        setTimeout(() => window.close(), 3000);
     };
 
     video.onloadedmetadata = async () => {
@@ -124,6 +123,8 @@ function handleTimelapseAndSrt(chunks, log, recordingStartTime) {
             video.onended = () => timelapseRecorder.stop();
         } catch (err) {
             console.error("Playback error:", err);
+            statusText.textContent = "Error processing video.";
+            setTimeout(() => window.close(), 3000);
         }
     };
 }
@@ -133,8 +134,7 @@ function generateSRT(log, totalDuration) {
         const d = new Date(ms);
         return `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}:${String(d.getUTCSeconds()).padStart(2, '0')},${String(d.getUTCMilliseconds()).padStart(3, '0')}`;
     };
-
-    if (log.length === 0) return "";
+    if (log.length === 0) return ""; // Should not happen with new logic, but safe to keep
     let srt = "";
     for (let i = 0; i < log.length; i++) {
         const start = log[i].time;

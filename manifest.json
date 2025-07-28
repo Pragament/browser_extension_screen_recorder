@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Exam Screen Recorder",
-  "version": "2.3",
-  "description": "Automatically records the screen with timelapse and subtitles during an exam, and handles callbacks.",
+  "name": "Smart Screen Recorder",
+  "version": "4.6",
+  "description": "A general recorder that enables special features on supported exam websites.",
   "permissions": [
     "downloads",
     "scripting",
@@ -18,7 +18,7 @@
   },
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Screen Recorder"
+    "default_title": "Smart Screen Recorder"
   },
   "options_page": "settings.html",
   "content_scripts": [
@@ -38,7 +38,9 @@
         "injector.js"
       ],
       "matches": [
-        "<all_urls>"
+        "https://pragament.github.io/*",
+        "http://localhost/*",
+        "http://127.0.0.1/*"
       ]
     }
   ],

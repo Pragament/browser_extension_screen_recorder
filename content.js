@@ -1,41 +1,39 @@
 // content.js
 
-// Inject the script that can access the page's JS context
-const s = document.createElement('script');
-s.src = chrome.runtime.getURL('injector.js');
-s.onload = function() { this.remove(); };
-(document.head || document.documentElement).appendChild(s);
+// This script is now much simpler. Its only job is to handle the exam site logic.
+// All title tracking has been moved to the background script for reliability.
 
-// Listen for the event from the page to START recording
-window.addEventListener('start-recording-event', () => {
-    chrome.runtime.sendMessage({ action: 'startRecording' });
-});
+const examSiteUrls = [
+    'https://pragament.github.io/javascript_exam_maker/',
+    'http://localhost',
+    'http://127.0.0.1'
+];
 
-// Listen for messages FROM the background script
-chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-    switch (msg.action) {
-        // NEW: When the background confirms recording has started
-        case 'recordingStarted':
-            window.dispatchEvent(new CustomEvent('recording-started-event'));
-            break;
-        // When the background confirms recording has stopped
-        case 'recordingStoppedCallback':
-            window.dispatchEvent(new CustomEvent('recording-stopped-event'));
-            break;
-    }
-    sendResponse({ success: true });
-    return true;
-});
+const isExamSite = examSiteUrls.some(url => window.location.href.startsWith(url));
 
-// Continue to monitor title for SRT subtitles
-let lastTitle = document.title;
-setInterval(() => {
-  const currentTitle = document.title;
-  if (currentTitle !== lastTitle) {
-    lastTitle = currentTitle;
-    chrome.runtime.sendMessage({
-      type: "storeTitle",
-      title: currentTitle
+if (isExamSite) {
+    console.log("Exam site detected. Activating special features.");
+
+    const s = document.createElement('script');
+    s.src = chrome.runtime.getURL('injector.js');
+    s.onload = function() { this.remove(); };
+    (document.head || document.documentElement).appendChild(s);
+
+    window.addEventListener('start-recording-event', () => {
+        chrome.runtime.sendMessage({ action: 'startRecording', isExam: true });
     });
-  }
-}, 500);
+
+    chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+        if (!chrome.runtime?.id) return;
+        switch (msg.action) {
+            case 'recordingStarted':
+                window.dispatchEvent(new CustomEvent('recording-started-event'));
+                break;
+            case 'recordingStoppedCallback':
+                window.dispatchEvent(new CustomEvent('recording-stopped-event'));
+                break;
+        }
+        sendResponse({ success: true });
+        return true;
+    });
+}

@@ -1,19 +1,14 @@
 // popup.js
 
+// This button is for manual recording on generic sites
 document.getElementById("start").addEventListener("click", () => {
-    chrome.runtime.sendMessage({ action: "startRecording" });
+    // isExam is false because this is a manual start
+    chrome.runtime.sendMessage({ action: "startRecording", isExam: false });
 });
 
-document.getElementById("stopShare").addEventListener("click", () => {
-    chrome.runtime.sendMessage({ action: "stopRecording" }, (res) => {
-        if (chrome.runtime.lastError) {
-            alert("An error occurred. The recorder might already be closed.");
-        } else if (res?.success) {
-            alert("Recording stop signal sent.");
-        } else {
-            alert(res?.message || "No active recording to stop.");
-        }
-    });
+// The stop button is universal
+document.getElementById("stop").addEventListener("click", () => {
+    chrome.runtime.sendMessage({ action: "stopRecording" });
 });
 
 document.getElementById("settings-icon").addEventListener("click", () => {
