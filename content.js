@@ -1,5 +1,22 @@
 console.log("📌 Content script loaded");
 
+// 🔔 Track title changes and send to background
+let lastTitle = document.title;
+
+setInterval(() => {
+  const currentTitle = document.title;
+  if (currentTitle !== lastTitle) {
+    lastTitle = currentTitle;
+    chrome.runtime.sendMessage({
+      type: "titleUpdate",
+      title: currentTitle
+    });
+  }
+}, 500);
+
+// ==========================
+// Recording Logic
+// ==========================
 let mediaRecorder;
 let recordedChunks = [];
 
@@ -20,7 +37,12 @@ chrome.runtime.onMessage.addListener((msg) => {
 
     navigator.mediaDevices.getUserMedia({
       audio: false,
-      video: { mandatory: { chromeMediaSource: "desktop", chromeMediaSourceId: msg.streamId } }
+      video: {
+        mandatory: {
+          chromeMediaSource: "desktop",
+          chromeMediaSourceId: msg.streamId
+        }
+      }
     }).then((stream) => {
       recordedChunks = [];
       mediaRecorder = new MediaRecorder(stream);
