@@ -1,6 +1,5 @@
 ### ✅ `README.md`
 
-```markdown
 # Flexible Screen Recorder (Chrome Extension)
 
 A Chrome extension to record your **entire screen**, **application window**, or **browser tab** with customizable **frame rate (FPS)**. Includes an admin settings page for better control.
@@ -39,9 +38,9 @@ A Chrome extension to record your **entire screen**, **application window**, or 
 ## 🛠️ Installation (Build & Run)
 
 1. **Clone or Download** the repository:
-   ```bash
+```bash
    git clone https://github.com/Pragament/browser_extension_screen_recorder.git
-````
+```
 
 2. **Open Chrome** and go to:
 
