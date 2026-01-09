@@ -9,17 +9,21 @@
       width: 300px;
     }
 
-    label, select, button {
+    label, select, button, input {
       display: block;
       width: 100%;
       margin-top: 10px;
       font-size: 14px;
     }
 
-    select, button {
+    select, button, input {
       padding: 8px;
       border-radius: 4px;
       border: 1px solid #ccc;
+    }
+
+    input {
+      box-sizing: border-box;
     }
 
     button {
@@ -38,6 +42,39 @@
 <body>
   <h2>Admin Settings</h2>
 
+  <h3>Firebase Configuration</h3>
+  <label for="apiKey">API Key:</label>
+  <input type="text" id="apiKey" placeholder="AIzaSy..." />
+
+  <label for="authDomain">Auth Domain:</label>
+  <input type="text" id="authDomain" placeholder="project.firebaseapp.com" />
+
+  <label for="projectId">Project ID:</label>
+  <input type="text" id="projectId" placeholder="project-id" />
+
+  <label for="storageBucket">Storage Bucket:</label>
+  <input type="text" id="storageBucket" placeholder="project.appspot.com" />
+
+  <label for="messagingSenderId">Messaging Sender ID:</label>
+  <input type="text" id="messagingSenderId" placeholder="123456789" />
+
+  <label for="appId">App ID:</label>
+  <input type="text" id="appId" placeholder="1:123456789:web:abc123" />
+
+  <label for="measurementId">Measurement ID (Optional):</label>
+  <input type="text" id="measurementId" placeholder="G-XXXXXXXXXX" />
+
+  <hr style="margin: 20px 0;" />
+  <h3>GitHub</h3>
+  <label>GitHub OAuth Client IDs (optional)</label>
+  <div id="github-client-list" style="margin-top:6px; margin-bottom:6px;"></div>
+  <input type="text" id="newGithubClientId" placeholder="OAuth App Client ID (no secret)" />
+  <button id="addGithubClient">Add Client ID</button>
+  <p style="font-size:12px; color:#666; margin-top:8px;">Add one or more OAuth App Client IDs. Device Flow will use the chosen Client ID. Do not add client secrets.</p>
+
+  <hr style="margin: 20px 0;" />
+
+  <h3>Recording Settings</h3>
   <label for="source">Default Recording Source:</label>
   <select id="source">
     <option value="screen">Entire Screen</option>
@@ -54,6 +91,7 @@
   </select>
 
   <button id="save">Save Settings</button>
+  <button id="reset">Reset to Default</button>
 
   <script src="settings.js"></script>
 </body>

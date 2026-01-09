@@ -1,16 +1,29 @@
 {
   "manifest_version": 3,
-  "name": "Flexible Screen Recorder with Subtitles",
-  "version": "1.4",
+  "name": "Student Screen Recorder",
+  "version": "1.0",
+  "description": "Record screen and upload to GitHub after login with Firebase GitHub Auth.",
   "permissions": [
     "downloads",
     "scripting",
     "activeTab",
     "tabs",
     "desktopCapture",
-    "storage"
-],
-  "host_permissions": ["<all_urls>"],
+    "storage",
+    "identity",
+    "unlimitedStorage"
+  ],
+  "host_permissions": [
+    "https://*.firebaseapp.com/*",
+    "https://*.github.com/*",
+    "https://api.github.com/*"
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["window.html"],
+      "matches": ["<all_urls>"]
+    }
+  ],
   "background": {
     "service_worker": "background.js"
   },
@@ -22,11 +35,14 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["content.js"],
-      "run_at": "document_idle"
+      "js": ["content.js"]
     }
   ],
   "icons": {
     "128": "download.png"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'; frame-src 'self'; connect-src 'self' https://api.github.com https://github.com https://*.github.com https://*.githubusercontent.com https://*.firebaseapp.com"
   }
 }
+

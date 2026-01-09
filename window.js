@@ -71,6 +71,23 @@ let titleInterval;
     const originalBlob = new Blob(recordedChunks, { type: "video/webm" });
     const originalUrl = URL.createObjectURL(originalBlob);
 
+    // Save the original recording first
+    chrome.runtime.sendMessage({
+      type: "SAVE_RECORDING",
+      blobUrl: originalUrl
+    }, (response) => {
+      if (response && response.success) {
+        console.log("✅ Original recording saved with ID:", response.downloadId);
+        // Store the download ID for later upload
+        chrome.storage.local.set({ 
+          latestRecordingId: response.downloadId,
+          latestRecordingFilename: response.filename 
+        });
+      } else {
+        console.error("❌ Failed to save recording:", response?.error);
+      }
+    });
+
     // Playback at faster rate using <video> and captureStream
     const video = document.createElement("video");
     video.src = originalUrl;
@@ -115,6 +132,12 @@ let titleInterval;
         URL.revokeObjectURL(timelapseUrl);
         URL.revokeObjectURL(srtUrl);
         URL.revokeObjectURL(originalUrl);
+        // Notify background that recorder has finished/closed
+        try {
+          chrome.runtime.sendMessage({ type: "RECORDER_STOPPED" }, () => {});
+        } catch (e) {
+          // ignore
+        }
       }, 1500);
     };
 
@@ -132,6 +155,15 @@ let titleInterval;
   };
 
   mediaRecorder.start();
+  // Register this recorder window/tab with the background script so global stop commands can reach it
+  try {
+    chrome.runtime.sendMessage({ type: "REGISTER_RECORDER" }, (res) => {
+      // optional: log registration result
+      if (res && res.success) console.log("Recorder registered with background.");
+    });
+  } catch (e) {
+    console.warn("Could not register recorder with background:", e);
+  }
   stopBtn.disabled = false;
   statusText.textContent = "Recording...";
 
@@ -141,6 +173,19 @@ let titleInterval;
       stopBtn.disabled = true;
     }
   };
+
+  // Listen for stop messages from other parts of the extension (popup/background)
+  chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+    if (msg && msg.type === "STOP_SCREEN_RECORDING") {
+      if (mediaRecorder && mediaRecorder.state !== "inactive") {
+        mediaRecorder.stop();
+        stopBtn.disabled = true;
+        sendResponse({ success: true });
+      } else {
+        sendResponse({ success: false, error: "no-active-recorder" });
+      }
+    }
+  });
 })();
 
 function generateSRT(log, totalDuration) {

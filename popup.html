@@ -1,18 +1,56 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="utf-8" />
   <title>Screen Recorder</title>
   <style>
-    body { font-family: sans-serif; padding: 16px; width: 300px; }
-    button { width: 100%; padding: 10px; margin-top: 10px; }
-    #settings-icon { width: 24px; cursor: pointer; float: right; }
+    body {
+      font-family: sans-serif;
+      padding: 16px;
+      width: 320px;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+    }
+    #settings-icon {
+      width: 24px;
+      cursor: pointer;
+      float: right;
+    }
+    #userInfo {
+      margin-top: 10px;
+      border-top: 1px solid #ddd;
+      padding-top: 10px;
+    }
   </style>
 </head>
 <body>
   <h2>Recorder <img id="settings-icon" src="download.png" title="Settings"></h2>
+
+  <!-- GitHub login section -->
+  <div id="auth-section">
+    <button id="loginBtn">Login with GitHub (OAuth)</button>
+    <button id="usePatBtn" style="margin-top:6px;">Login with Personal Access Token</button>
+    <p style="font-size: 12px; color: #666; margin: 5px 0;">
+      Use OAuth (recommended) or Personal Access Token with 'repo' scope
+    </p>
+
+    <div id="userInfo" style="display:none;">
+      <p>👤 Logged in as <span id="username"></span></p>
+      <button id="logoutBtn">Logout</button>
+    </div>
+  </div>
+
+  <hr />
+
+  <!-- Screen recorder buttons -->
   <button id="start">Start Recording</button>
   <button id="stopRecordingBtn">Stop Recording</button>
   <button id="stopShare">Stop Sharing</button>
+
+  <!-- Extension logic -->
   <script src="popup.js"></script>
 </body>
 </html>
